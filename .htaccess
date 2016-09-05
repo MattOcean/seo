@@ -140,3 +140,121 @@ RewriteRule ^/?$ "http\:\/\/www\.rodentia\.es" [R=301,L]
 </FilesMatch>
 </IfModule>
 
+<IfModule mod_rewrite.c>
+     # You may need to un-comment the following lines
+     # Options +FollowSymlinks
+     # To make sure that rewritten dir or file (/|.html) will not load dir.php in case it exist
+     # Options -MultiViews
+     # REMEBER YOU ONLY NEED TO STARD MOD REWRITE ONCE
+     RewriteEngine On
+
+     # Uncomment the statement below if you want to make use of
+     # HTTP authentication and it does not already work.
+     # This could be required if you are for example using PHP via Apache CGI.
+     # RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization},L]
+
+     # REWRITE BASE
+     RewriteBase /
+
+     
+
+     # DO NOT GO FURTHER IF THE REQUESTED FILE / DIR DOES EXISTS
+     RewriteCond %{REQUEST_FILENAME} -f [OR]
+     RewriteCond %{REQUEST_FILENAME} -d
+     RewriteRule . - [L]
+     # FORUM INDEX REWRITERULE WOULD STAND HERE IF USED. "forum" REQUIRES TO BE SET AS FORUM INDEX
+     # RewriteRule ^foro/forum\.html$ /foro/index.php [QSA,L,NC]
+     # FORUM ALL MODES
+     RewriteRule ^foro/(forum|[a-z0-9_-]*-f)([0-9]+)/?(page([0-9]+)\.html)?$ /foro/viewforum.php?f=$2&start=$4 [QSA,L,NC]
+     # TOPIC WITH VIRTUAL FOLDER ALL MODES
+     RewriteRule ^foro/(forum|[a-z0-9_-]*-f)([0-9]+)/(topic|[a-z0-9_-]*-t)([0-9]+)(-([0-9]+))?\.html$ /foro/viewtopic.php?f=$2&t=$4&start=$6 [QSA,L,NC]
+     # TOPIC WITHOUT FORUM ID & DELIM ALL MODES
+     RewriteRule ^foro/([a-z0-9_-]*)/?(topic|[a-z0-9_-]*-t)([0-9]+)(-([0-9]+))?\.html$ /foro/viewtopic.php?forum_uri=$1&t=$3&start=$5 [QSA,L,NC]
+     # PROFILES THROUGH USERNAME
+     RewriteRule ^foro/member/([^/]+)/?$ /foro/memberlist.php?mode=viewprofile&un=$1 [QSA,L,NC]
+     # USER MESSAGES THROUGH USERNAME
+     RewriteRule ^foro/member/([^/]+)/(topics|posts)/?(page([0-9]+)\.html)?$ /foro/search.php?author=$1&sr=$2&start=$4 [QSA,L,NC]
+     # GROUPS ALL MODES
+     RewriteRule ^foro/(group|[a-z0-9_-]*-g)([0-9]+)(-([0-9]+))?\.html$ /foro/memberlist.php?mode=group&g=$2&start=$4 [QSA,L,NC]
+     # POSTS
+     RewriteRule ^foro/post([0-9]+)\.html$ /foro/viewtopic.php?p=$1 [QSA,L,NC]
+     # ACTIVE TOPICS
+     RewriteRule ^foro/active-topics(-([0-9]+))?\.html$ /foro/search.php?search_id=active_topics&start=$2&sr=topics [QSA,L,NC]
+     # UNANSWERED TOPICS
+     RewriteRule ^foro/unanswered(-([0-9]+))?\.html$ /foro/search.php?search_id=unanswered&start=$2&sr=topics [QSA,L,NC]
+     # NEW POSTS
+     RewriteRule ^foro/newposts(-([0-9]+))?\.html$ /foro/search.php?search_id=newposts&start=$2&sr=topics [QSA,L,NC]
+     # UNREAD POSTS
+     RewriteRule ^foro/unreadposts(-([0-9]+))?\.html$ /foro/search.php?search_id=unreadposts&start=$2 [QSA,L,NC]
+     # THE TEAM
+     RewriteRule ^foro/the-team\.html$ /foro/memberlist.php?mode=team [QSA,L,NC]
+     # HERE IS A GOOD PLACE TO ADD OTHER PHPBB RELATED REWRITERULES
+     
+     # FORUM WITHOUT ID & DELIM ALL MODES
+     # THESE LINES MUST BE LOCATED AT THE END OF YOUR HTACCESS TO WORK PROPERLY
+     RewriteCond %{REQUEST_FILENAME} !-f
+     RewriteCond %{REQUEST_FILENAME} !-d
+     RewriteRule ^foro/([a-z0-9_-]+)/?(page([0-9]+)\.html)?$ /foro/viewforum.php?forum_uri=$1&start=$3 [QSA,L,NC]
+     # FIX RELATIVE PATHS : FILES
+     RewriteRule ^foro/(style\.php|ucp\.php|mcp\.php|faq\.php|posting\.php|download/file\.php|report\.php|adm/index\.php|cron\.php)$ /foro/$1 [QSA,L,NC,R=301]
+     # FIX RELATIVE PATHS : IMAGES
+     RewriteRule ^foro/(styles/.*|images/.*|assets/.*|ext/.*)$ /foro/$1 [QSA,L,NC,R=301]
+     #
+     # The following 3 lines will rewrite URLs passed through the front controller
+     # to not require app.php in the actual URL. In other words, a controller is
+     # by default accessed at /app.php/my/controller, but can also be accessed at
+     # /my/controller
+     #
+     RewriteCond %{REQUEST_FILENAME} !-f
+     RewriteCond %{REQUEST_FILENAME} !-d
+     RewriteRule ^foro/(.*)$ /foro/app.php [QSA,L]
+
+</IfModule>
+
+# With Apache 2.4 the "Order, Deny" syntax has been deprecated and moved from
+# module mod_authz_host to a new module called mod_access_compat (which may be
+# disabled) and a new "Require" syntax has been introduced to mod_authz_host.
+# We could just conditionally provide both versions, but unfortunately Apache
+# does not explicitly tell us its version if the module mod_version is not
+# available. In this case, we check for the availability of module
+# mod_authz_core (which should be on 2.4 or higher only) as a best guess.
+<IfModule mod_version.c>
+     <IfVersion < 2.4>
+          <Files "config.php">
+               Order Allow,Deny
+               Deny from All
+          </Files>
+          <Files "common.php">
+               Order Allow,Deny
+               Deny from All
+          </Files>
+     </IfVersion>
+     <IfVersion >= 2.4>
+          <Files "config.php">
+               Require all denied
+          </Files>
+          <Files "common.php">
+               Require all denied
+          </Files>
+     </IfVersion>
+</IfModule>
+<IfModule !mod_version.c>
+     <IfModule !mod_authz_core.c>
+          <Files "config.php">
+               Order Allow,Deny
+               Deny from All
+          </Files>
+          <Files "common.php">
+               Order Allow,Deny
+               Deny from All
+          </Files>
+     </IfModule>
+     <IfModule mod_authz_core.c>
+          <Files "config.php">
+               Require all denied
+          </Files>
+          <Files "common.php">
+               Require all denied
+          </Files>
+     </IfModule>
+</IfModule>
